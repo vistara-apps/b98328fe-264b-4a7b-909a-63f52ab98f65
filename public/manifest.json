@@ -1,0 +1,14 @@
+{
+  "name": "CollabFlow",
+  "description": "CollabFlow is a Base Mini App built with Zara.",
+  "image": "https://dummyimage.com/1200x628/0a0b0d/ffffff.png&text=OG",
+  "external_url": "https://b98328fe-264b-4a7b-909a-63f52ab98f65.vercel.app",
+  "properties": {
+    "app": {
+      "name": "CollabFlow",
+      "description": "CollabFlow is a Base Mini App built with Zara.",
+      "url": "https://b98328fe-264b-4a7b-909a-63f52ab98f65.vercel.app",
+      "icon": "https://0co.to/images/zara-2.png"
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "accountAssociation": {
+    "header": "",
+    "payload": "",
+    "signature": ""
+  },
+  "frame": {
+    "version": "1",
+    "name": "CollabFlow",
+    "subtitle": "Built with Zara",
+    "description": "CollabFlow is a Base Mini App built with Zara.",
+    "iconUrl": "https://0co.to/images/zara-2.png",
+    "homeUrl": "https://b98328fe264b4a7b909a63f52ab98f65-rg8r.vercel.app",
+    "splashImageUrl": "https://b98328fe264b4a7b909a63f52ab98f65-rg8r.vercel.app/splash.png",
+    "splashBackgroundColor": "#000000",
+    "heroImageUrl": "https://b98328fe264b4a7b909a63f52ab98f65-rg8r.vercel.app/image.png",
+    "tagline": "CollabFlow",
+    "screenshotUrls": [
+      "https://b98328fe264b4a7b909a63f52ab98f65-rg8r.vercel.app/screenshot.png",
+      "https://b98328fe264b4a7b909a63f52ab98f65-rg8r.vercel.app/screenshot.png"
+    ],
+    "primaryCategory": "social",
+    "tags": [
+      "base",
+      "miniapp",
+      "onchainkit"
+    ],
+    "webhookUrl": "https://b98328fe264b4a7b909a63f52ab98f65-rg8r.vercel.app/api/webhook"
+  }
+}
