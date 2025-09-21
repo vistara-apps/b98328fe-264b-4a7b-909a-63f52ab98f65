@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: hsl(210 25% 95%);
+  --accent: hsl(30 90% 65%);
+  --primary: hsl(200 70% 50%);
+  --surface: hsl(210 25% 100%);
+  --text-primary: hsl(210 25% 15%);
+  --text-secondary: hsl(210 25% 45%);
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+body {
+  color: var(--text-primary);
+  background: var(--bg);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-secondary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-primary);
+}
+
+/* Smooth transitions */
+* {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Focus styles */
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
