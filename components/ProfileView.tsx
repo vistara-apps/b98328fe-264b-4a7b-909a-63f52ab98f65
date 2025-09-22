@@ -17,9 +17,10 @@ interface ProfileViewProps {
 }
 
 export function ProfileView({ userId, className }: ProfileViewProps) {
-  const [user, setUser] = useState<User>(
-    SAMPLE_USERS.find(u => u.userId === userId) || SAMPLE_USERS[0]
-  );
+  const [user, setUser] = useState<User>(() => {
+    const foundUser = SAMPLE_USERS.find(u => u.userId === userId) || SAMPLE_USERS[0];
+    return { ...foundUser, linkedProjects: [...foundUser.linkedProjects] };
+  });
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     displayName: user.displayName,
@@ -29,7 +30,9 @@ export function ProfileView({ userId, className }: ProfileViewProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   // Get user's projects
-  const userProjects = SAMPLE_PROJECTS.filter(p => p.userId === userId);
+  const userProjects = SAMPLE_PROJECTS
+    .filter(p => p.userId === userId)
+    .map(p => ({ ...p, skillsRequired: [...p.skillsRequired] }));
 
   const handleInputChange = (field: string, value: string) => {
     setEditData(prev => ({ ...prev, [field]: value }));

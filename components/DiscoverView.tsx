@@ -15,8 +15,8 @@ interface DiscoverViewProps {
 
 export function DiscoverView({ onMatch, className }: DiscoverViewProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [projects] = useState<ProjectProfile[]>(SAMPLE_PROJECTS);
-  const [users] = useState<User[]>(SAMPLE_USERS);
+  const [projects] = useState<ProjectProfile[]>(SAMPLE_PROJECTS.map(p => ({ ...p, skillsRequired: [...p.skillsRequired] })));
+  const [users] = useState<User[]>(SAMPLE_USERS.map(u => ({ ...u, linkedProjects: [...u.linkedProjects] })));
   const [isLoading, setIsLoading] = useState(false);
 
   const currentProject = projects[currentIndex];
