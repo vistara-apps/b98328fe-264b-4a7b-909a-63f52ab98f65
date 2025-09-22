@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Badge } from '@/components/ui/Badge';
 import { SKILL_CATEGORIES, WORK_STYLES, MAX_TITLE_LENGTH, MAX_DESCRIPTION_LENGTH } from '@/lib/constants';
-import { generateId, cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { db } from '@/lib/database';
+import { cn } from '@/lib/utils';
 import { X, Plus } from 'lucide-react';
 
 interface CreateProjectViewProps {
@@ -17,6 +19,7 @@ interface CreateProjectViewProps {
 }
 
 export function CreateProjectView({ onProjectCreated, onCancel, className }: CreateProjectViewProps) {
+  const { appUser } = useAuth();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -94,26 +97,21 @@ export function CreateProjectView({ onProjectCreated, onCancel, className }: Cre
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
+
+    if (!validateForm() || !appUser) return;
 
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const newProject: ProjectProfile = {
-        projectId: generateId(),
-        userId: 'current-user', // In real app, get from auth
+      const newProject = await db.createProject({
+        userId: appUser.userId,
         title: formData.title.trim(),
         description: formData.description.trim(),
         vision: formData.vision.trim(),
         workStyle: formData.workStyle,
         skillsRequired: formData.skillsRequired,
-        createdAt: new Date(),
         status: 'active',
-      };
+      });
 
       onProjectCreated(newProject);
     } catch (error) {

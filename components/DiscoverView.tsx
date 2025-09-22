@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { ProjectProfile, User, SwipeDirection } from '@/lib/types';
 import { SwipeableCard } from '@/components/SwipeableCard';
 import { SwipeButton } from '@/components/SwipeButton';
-import { SAMPLE_PROJECTS, SAMPLE_USERS } from '@/lib/constants';
+import { useAuth } from '@/hooks/useAuth';
+import { db } from '@/lib/database';
 import { cn } from '@/lib/utils';
 import { RefreshCw } from 'lucide-react';
 
@@ -14,21 +15,90 @@ interface DiscoverViewProps {
 }
 
 export function DiscoverView({ onMatch, className }: DiscoverViewProps) {
+  const { appUser } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [projects] = useState<ProjectProfile[]>(SAMPLE_PROJECTS);
-  const [users] = useState<User[]>(SAMPLE_USERS);
-  const [isLoading, setIsLoading] = useState(false);
+  const [projects, setProjects] = useState<ProjectProfile[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const currentProject = projects[currentIndex];
   const currentUser = users.find(u => u.userId === currentProject?.userId);
 
-  const handleSwipe = (direction: SwipeDirection) => {
-    if (direction === 'right' && currentProject) {
-      // Simulate match (in real app, this would check if the other user also swiped right)
-      const isMatch = Math.random() > 0.5; // 50% chance of match for demo
-      if (isMatch) {
-        onMatch(currentProject.projectId);
+  // Load projects and users
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setIsLoading(true);
+
+        // Load all active projects
+        const activeProjects = await db.getAllActiveProjects();
+
+        // Filter out user's own projects
+        const otherProjects = activeProjects.filter(p => p.userId !== appUser?.userId);
+
+        setProjects(otherProjects);
+
+        // Load all users (we'll need them for project owners)
+        // In a real app, you'd load users associated with the projects
+        const allUsers = new Map<string, User>();
+        for (const project of otherProjects) {
+          if (!allUsers.has(project.userId)) {
+            const user = await db.getUser(project.userId);
+            if (user) {
+              allUsers.set(project.userId, user);
+            }
+          }
+        }
+        setUsers(Array.from(allUsers.values()));
+      } catch (error) {
+        console.error('Error loading discover data:', error);
+      } finally {
+        setIsLoading(false);
       }
+    };
+
+    if (appUser) {
+      loadData();
+    }
+  }, [appUser]);
+
+  const handleSwipe = async (direction: SwipeDirection) => {
+    if (!currentProject || !appUser) return;
+
+    try {
+      // Create swipe record
+      await db.createSwipe({
+        swiperUserId: appUser.userId,
+        swipedProjectId: currentProject.projectId,
+        swipeDirection: direction,
+      });
+
+      if (direction === 'right') {
+        // Check for mutual match
+        const projectOwnerSwipes = await db.getSwipesByUser(currentProject.userId);
+        const mutualSwipe = projectOwnerSwipes.find(s =>
+          s.swipedProjectId && s.swipeDirection === 'right'
+        );
+
+        if (mutualSwipe) {
+          // Check if the owner swiped on one of our projects
+          const userProjects = await db.getProjectsByUser(appUser.userId);
+          const matchingProject = userProjects.find(p => p.projectId === mutualSwipe.swipedProjectId);
+
+          if (matchingProject) {
+            // Create match
+            await db.createMatch({
+              projectProfile1Id: currentProject.projectId,
+              projectProfile2Id: matchingProject.projectId,
+            });
+
+            onMatch(currentProject.projectId);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error processing swipe:', error);
     }
 
     // Move to next project
@@ -40,21 +110,23 @@ export function DiscoverView({ onMatch, className }: DiscoverViewProps) {
   };
 
   const resetStack = () => {
-    setIsLoading(true);
+    setIsRefreshing(true);
     setTimeout(() => {
       setCurrentIndex(0);
-      setIsLoading(false);
+      setIsRefreshing(false);
     }, 500);
   };
 
   const hasMoreProjects = currentIndex < projects.length;
 
-  if (isLoading) {
+  if (isLoading || isRefreshing) {
     return (
       <div className={cn('flex items-center justify-center h-full', className)}>
         <div className="text-center space-y-4">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-textSecondary">Loading new projects...</p>
+          <p className="text-textSecondary">
+            {isRefreshing ? 'Refreshing projects...' : 'Loading projects...'}
+          </p>
         </div>
       </div>
     );
