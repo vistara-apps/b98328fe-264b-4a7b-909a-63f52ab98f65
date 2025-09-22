@@ -1,31 +1,88 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Match, ProjectProfile, User } from '@/lib/types';
 import { ProfileCard } from '@/components/ProfileCard';
 import { Button } from '@/components/ui/Button';
-import { SAMPLE_PROJECTS, SAMPLE_USERS } from '@/lib/constants';
+import { useAuth } from '@/hooks/useAuth';
+import { db } from '@/lib/database';
 import { cn, formatDate } from '@/lib/utils';
 import { MessageCircle, Calendar } from 'lucide-react';
 
 interface MatchesViewProps {
-  matches: string[]; // Array of project IDs that matched
   onStartChat: (projectId: string) => void;
   className?: string;
 }
 
-export function MatchesView({ matches, onStartChat, className }: MatchesViewProps) {
+export function MatchesView({ onStartChat, className }: MatchesViewProps) {
+  const { appUser } = useAuth();
   const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [matchedProjects, setMatchedProjects] = useState<ProjectProfile[]>([]);
+  const [matchedUsers, setMatchedUsers] = useState<User[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Get matched projects and users
-  const matchedProjects = SAMPLE_PROJECTS.filter(project => 
-    matches.includes(project.projectId)
-  );
-  const matchedUsers = SAMPLE_USERS.filter(user => 
-    matchedProjects.some(project => project.userId === user.userId)
-  );
+  // Load matches and related data
+  useEffect(() => {
+    const loadMatches = async () => {
+      if (!appUser) return;
 
-  if (matches.length === 0) {
+      try {
+        setIsLoading(true);
+
+        // Load user's matches
+        const userMatches = await db.getMatchesByUser(appUser.userId);
+        setMatches(userMatches);
+
+        // Load matched projects and users
+        const projects: ProjectProfile[] = [];
+        const users: User[] = [];
+
+        for (const match of userMatches) {
+          // Get the other project in the match
+          const userProjects = await db.getProjectsByUser(appUser.userId);
+          const otherProjectId = match.projectProfile1Id === userProjects[0]?.projectId
+            ? match.projectProfile2Id
+            : match.projectProfile1Id;
+
+          if (otherProjectId) {
+            const project = await db.getProject(otherProjectId);
+            if (project) {
+              projects.push(project);
+
+              // Load project owner
+              const owner = await db.getUser(project.userId);
+              if (owner && !users.find(u => u.userId === owner.userId)) {
+                users.push(owner);
+              }
+            }
+          }
+        }
+
+        setMatchedProjects(projects);
+        setMatchedUsers(users);
+      } catch (error) {
+        console.error('Error loading matches:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadMatches();
+  }, [appUser]);
+
+  if (isLoading) {
+    return (
+      <div className={cn('flex items-center justify-center h-full p-4', className)}>
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-textSecondary">Loading your matches...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (matchedProjects.length === 0) {
     return (
       <div className={cn('flex items-center justify-center h-full p-4', className)}>
         <div className="text-center space-y-6 max-w-sm">
@@ -49,7 +106,7 @@ export function MatchesView({ matches, onStartChat, className }: MatchesViewProp
       <div className="p-4 bg-surface border-b border-gray-200">
         <h2 className="text-xl font-bold text-textPrimary">Your Matches</h2>
         <p className="text-sm text-textSecondary">
-          {matches.length} project{matches.length !== 1 ? 's' : ''} matched with you
+          {matchedProjects.length} project{matchedProjects.length !== 1 ? 's' : ''} matched with you
         </p>
       </div>
 

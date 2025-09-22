@@ -8,14 +8,16 @@ import { MatchesView } from '@/components/MatchesView';
 import { ChatView } from '@/components/ChatView';
 import { CreateProjectView } from '@/components/CreateProjectView';
 import { ProfileView } from '@/components/ProfileView';
+import { AuthGuard } from '@/components/AuthGuard';
 import { APP_CONFIG } from '@/lib/constants';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
-export default function HomePage() {
+function HomePageContent() {
+  const { appUser } = useAuth();
   const [currentView, setCurrentView] = useState<ViewMode>('discover');
-  const [matches, setMatches] = useState<string[]>([]);
+
   const [currentChatProject, setCurrentChatProject] = useState<string | null>(null);
-  const [currentUserId] = useState('current-user'); // In real app, get from auth
   const [showWelcome, setShowWelcome] = useState(true);
 
   // Hide welcome message after 3 seconds
@@ -28,11 +30,12 @@ export default function HomePage() {
   }, []);
 
   const handleMatch = (projectId: string) => {
-    setMatches(prev => [...prev, projectId]);
-    
     // Show match notification (in real app, this would be a toast/modal)
     console.log(`🎉 New match with project: ${projectId}`);
+    // Match is now handled in DiscoverView via API
   };
+
+  const currentUserId = appUser?.userId || '';
 
   const handleStartChat = (projectId: string) => {
     setCurrentChatProject(projectId);
@@ -44,8 +47,8 @@ export default function HomePage() {
     setCurrentView('matches');
   };
 
-  const handleProjectCreated = (project: ProjectProfile) => {
-    // In real app, this would save to backend
+  const handleProjectCreated = async (project: ProjectProfile) => {
+    // Project is already saved via API in CreateProjectView
     console.log('Project created:', project);
     setCurrentView('profile');
   };
@@ -72,12 +75,7 @@ export default function HomePage() {
         return <DiscoverView onMatch={handleMatch} />;
       
       case 'matches':
-        return (
-          <MatchesView
-            matches={matches}
-            onStartChat={handleStartChat}
-          />
-        );
+        return <MatchesView onStartChat={handleStartChat} />;
       
       case 'create':
         return (
@@ -88,7 +86,7 @@ export default function HomePage() {
         );
       
       case 'profile':
-        return <ProfileView userId={currentUserId} />;
+        return <ProfileView user={appUser} />;
       
       default:
         return <DiscoverView onMatch={handleMatch} />;
@@ -115,9 +113,16 @@ export default function HomePage() {
         <Navigation
           currentView={currentView}
           onViewChange={handleViewChange}
-          matchCount={matches.length}
         />
       )}
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <AuthGuard>
+      <HomePageContent />
+    </AuthGuard>
   );
 }

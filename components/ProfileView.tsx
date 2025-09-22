@@ -1,35 +1,60 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, ProjectProfile } from '@/lib/types';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { Avatar } from '@/components/ui/Avatar';
 import { ProfileCard } from '@/components/ProfileCard';
-import { SAMPLE_USERS, SAMPLE_PROJECTS, MAX_BIO_LENGTH } from '@/lib/constants';
+import { MAX_BIO_LENGTH } from '@/lib/constants';
+import { useAuth } from '@/hooks/useAuth';
+import { db } from '@/lib/database';
 import { cn } from '@/lib/utils';
 import { Edit2, Save, X, Settings, LogOut } from 'lucide-react';
 
 interface ProfileViewProps {
-  userId: string;
+  user: User | null;
   className?: string;
 }
 
-export function ProfileView({ userId, className }: ProfileViewProps) {
-  const [user, setUser] = useState<User>(
-    SAMPLE_USERS.find(u => u.userId === userId) || SAMPLE_USERS[0]
-  );
+export function ProfileView({ user: initialUser, className }: ProfileViewProps) {
+  const { logout } = useAuth();
+  const [user, setUser] = useState<User | null>(initialUser);
+  const [userProjects, setUserProjects] = useState<ProjectProfile[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
-    displayName: user.displayName,
-    bio: user.bio,
+    displayName: '',
+    bio: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Get user's projects
-  const userProjects = SAMPLE_PROJECTS.filter(p => p.userId === userId);
+  // Load user data and projects
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!initialUser) return;
+
+      try {
+        setUser(initialUser);
+        setEditData({
+          displayName: initialUser.displayName,
+          bio: initialUser.bio,
+        });
+
+        // Load user's projects
+        const projects = await db.getProjectsByUser(initialUser.userId);
+        setUserProjects(projects);
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, [initialUser]);
 
   const handleInputChange = (field: string, value: string) => {
     setEditData(prev => ({ ...prev, [field]: value }));
@@ -56,21 +81,22 @@ export function ProfileView({ userId, className }: ProfileViewProps) {
   };
 
   const handleSave = async () => {
-    if (!validateForm()) return;
+    if (!validateForm() || !user) return;
 
     setIsSaving(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      setUser(prev => ({
-        ...prev,
+      const updatedUser = await db.updateUser(user.userId, {
         displayName: editData.displayName.trim(),
         bio: editData.bio.trim(),
-      }));
+      });
 
-      setIsEditing(false);
+      if (updatedUser) {
+        setUser(updatedUser);
+        setIsEditing(false);
+      } else {
+        throw new Error('Failed to update user');
+      }
     } catch (error) {
       console.error('Error updating profile:', error);
       setErrors({ submit: 'Failed to update profile. Please try again.' });
@@ -87,6 +113,17 @@ export function ProfileView({ userId, className }: ProfileViewProps) {
     setErrors({});
     setIsEditing(false);
   };
+
+  if (isLoading || !user) {
+    return (
+      <div className={cn('flex items-center justify-center h-full', className)}>
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-textSecondary">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={cn('flex flex-col h-full bg-bg', className)}>
@@ -247,9 +284,7 @@ export function ProfileView({ userId, className }: ProfileViewProps) {
           <Button
             variant="outline"
             className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-            onClick={() => {
-              // Handle logout
-            }}
+            onClick={logout}
           >
             <LogOut className="w-4 h-4 mr-2" />
             Sign Out

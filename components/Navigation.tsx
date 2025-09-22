@@ -7,15 +7,13 @@ import { Heart, MessageCircle, User, Plus, Search } from 'lucide-react';
 interface NavigationProps {
   currentView: ViewMode;
   onViewChange: (view: ViewMode) => void;
-  matchCount?: number;
   className?: string;
 }
 
-export function Navigation({ 
-  currentView, 
-  onViewChange, 
-  matchCount = 0, 
-  className 
+export function Navigation({
+  currentView,
+  onViewChange,
+  className
 }: NavigationProps) {
   const navItems = [
     {
@@ -27,7 +25,6 @@ export function Navigation({
       id: 'matches' as ViewMode,
       icon: Heart,
       label: 'Matches',
-      badge: matchCount > 0 ? matchCount : undefined,
     },
     {
       id: 'create' as ViewMode,
@@ -50,26 +47,19 @@ export function Navigation({
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = currentView === item.id;
-          
+
           return (
             <button
               key={item.id}
               onClick={() => onViewChange(item.id)}
               className={cn(
                 'relative flex flex-col items-center gap-1 p-2 rounded-lg transition-colors',
-                isActive 
-                  ? 'text-primary bg-blue-50' 
+                isActive
+                  ? 'text-primary bg-blue-50'
                   : 'text-textSecondary hover:text-textPrimary hover:bg-gray-50'
               )}
             >
-              <div className="relative">
-                <Icon className="w-6 h-6" />
-                {item.badge && (
-                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {item.badge > 99 ? '99+' : item.badge}
-                  </span>
-                )}
-              </div>
+              <Icon className="w-6 h-6" />
               <span className="text-xs font-medium">{item.label}</span>
             </button>
           );
