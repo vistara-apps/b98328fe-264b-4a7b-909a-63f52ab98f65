@@ -18,12 +18,12 @@ export function MatchesView({ matches, onStartChat, className }: MatchesViewProp
   const [selectedMatch, setSelectedMatch] = useState<string | null>(null);
 
   // Get matched projects and users
-  const matchedProjects = SAMPLE_PROJECTS.filter(project => 
-    matches.includes(project.projectId)
-  );
-  const matchedUsers = SAMPLE_USERS.filter(user => 
-    matchedProjects.some(project => project.userId === user.userId)
-  );
+  const matchedProjects = SAMPLE_PROJECTS
+    .filter(project => matches.includes(project.projectId))
+    .map(p => ({ ...p, skillsRequired: [...p.skillsRequired] }));
+  const matchedUsers = SAMPLE_USERS
+    .filter(user => matchedProjects.some(project => project.userId === user.userId))
+    .map(u => ({ ...u, linkedProjects: [...u.linkedProjects] }));
 
   if (matches.length === 0) {
     return (
